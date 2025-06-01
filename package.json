@@ -1,0 +1,16 @@
+{
+  "name": "social-media-analytics",
+  "version": "1.0.0",
+  "description": "A serverless platform that collects, processes, and analyzes social media data (e.g., posts, likes, comments) providing users with insights and sentiment analysis",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "serverless": "^4.15.1",
+    "serverless-offline": "^14.4.0"
+  }
+}
