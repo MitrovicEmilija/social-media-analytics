@@ -25,25 +25,24 @@
     "rules": "storage.rules"
   },
   "emulators": {
-    "apphosting": {
-      "port": 5002,
-      "rootDirectory": "social-media-analytics"
-    },
     "functions": {
       "port": 5001
     },
     "firestore": {
       "port": 8080
     },
-    "pubsub": {
-      "port": 8085
-    },
     "storage": {
       "port": 9199
     },
-    "ui": {
-      "enabled": true
+    "pubsub": {
+      "port": 8085
     },
-    "singleProjectMode": true
+    "ui": {
+      "port": 4000
+    },
+    "singleProjectMode": true,
+    "auth": {
+      "port": 9099
+    }
   }
 }
