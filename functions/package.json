@@ -20,7 +20,7 @@
     "axios": "^1.7.7",
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.3.2",
-    "pdfkit": "^0.15.0"
+    "node-latex": "^3.1.0"
   },
   "devDependencies": {
     "eslint": "^8.15.0",

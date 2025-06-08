@@ -3,8 +3,8 @@ import { auth } from "./firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { BrowserRouter as Router, Route, Routes, Navigate, Link } from "react-router-dom";
 import Auth from "./components/Auth";
-import Analytics from "./components/Analytics";
-import Settings from "./components/Settings";
+import Dashboard from "./components/Dashboard";
+import Profile from "./components/Profile";
 import Reports from "./components/Reports";
 import { Box, AppBar, Toolbar, Typography, Button, IconButton, Drawer, List, ListItem, ListItemText } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -17,7 +17,7 @@ const App = () => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-    return () => unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   const handleSignOut = async () => {
@@ -32,8 +32,8 @@ const App = () => {
     <Box sx={{ width: 250 }} onClick={toggleDrawer(false)}>
       <List>
         {user && [
-          { text: "Analytics", path: "/analytics" },
-          { text: "Settings", path: "/settings" },
+          { text: "Dashboard", path: "/dashboard" },
+          { text: "Profile", path: "/profile" },
           { text: "Reports", path: "/reports" },
         ].map((item) => (
           <ListItem button key={item.text} component={Link} to={item.path}>
@@ -58,7 +58,7 @@ const App = () => {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              Social Media Analytics
+              Finance Tracker
             </Typography>
             {user && (
               <Button color="inherit" onClick={handleSignOut} sx={{ display: { xs: "none", sm: "block" } }}>
@@ -72,9 +72,9 @@ const App = () => {
         </Drawer>
         <Box sx={{ p: 2 }}>
           <Routes>
-            <Route path="/" element={!user ? <Auth setUser={setUser} /> : <Navigate to="/analytics" />} />
-            <Route path="/analytics" element={user ? <Analytics user={user} /> : <Navigate to="/" />} />
-            <Route path="/settings" element={user ? <Settings user={user} /> : <Navigate to="/" />} />
+            <Route path="/" element={!user ? <Auth setUser={setUser} /> : <Navigate to="/dashboard" />} />
+            <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/" />} />
+            <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/" />} />
             <Route path="/reports" element={user ? <Reports user={user} /> : <Navigate to="/" />} />
           </Routes>
         </Box>

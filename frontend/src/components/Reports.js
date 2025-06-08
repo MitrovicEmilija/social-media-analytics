@@ -1,74 +1,103 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { db, functionsUrl } from "../firebase/firebaseConfig";
-import { collection, onSnapshot } from "firebase/firestore";
-import { Box, Typography, Button, List, ListItem, ListItemText, CircularProgress } from "@mui/material";
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useState } from "react";
+import { Box, Typography, TextField, Button, CircularProgress, Snackbar, Alert } from "@mui/material";
+import { saveAs } from "file-saver";
 
 const Reports = ({ user }) => {
-  const [reports, setReports] = useState([]);
-  const [error, setError] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const baseUrl = "http://localhost:5001/social-media-analytics-b1bd7/us-central1";
 
-  useEffect(() => {
-    if (!user) return;
-    const unsubscribe = onSnapshot(collection(db, "reports"), (snapshot) => {
-      const fetchedReports = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setReports(fetchedReports);
-      setError("");
-    }, (err) => {
-      setError(err.message);
-    });
-    return () => unsubscribe();
-  }, [user]);
+  const handleExportPDF = async () => {
+    if (!startDate || !endDate) {
+      setSnackbar({ open: true, message: "Please select both start and end dates", severity: "error" });
+      return;
+    }
+    if (new Date(endDate) < new Date(startDate)) {
+      setSnackbar({ open: true, message: "End date must be after start date", severity: "error" });
+      return;
+    }
 
-  const handleExport = async (reportId) => {
-    setError("");
     setLoading(true);
+    setSnackbar({ open: false, message: "", severity: "success" });
+
     try {
-      const idToken = await user.getIdToken();
-      const response = await axios.get(`${functionsUrl}/exportReport?reportId=${reportId}`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-      window.open(response.data.url, "_blank");
-    } catch (err) {
-      setError(err.response?.data?.error || err.message);
+      const response = await fetch(
+        `${baseUrl}/exportTransactionsToPDF?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${await user.getIdToken()}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate PDF");
+      }
+      const blob = await response.blob();
+      saveAs(blob, `transactions_${startDate}_to_${endDate}.pdf`);
+      setSnackbar({ open: true, message: "PDF exported successfully", severity: "success" });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      setSnackbar({ open: true, message: error.message, severity: "error" });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   return (
-    <Box sx={{ maxWidth: 600, mx: "auto", mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ maxWidth: 600, mx: "auto", mt: 4, p: 2 }}>
+      <Typography variant="h4" gutterBottom align="center">
         Reports
       </Typography>
-      <Typography variant="h6">Available Reports</Typography>
-      {loading && <CircularProgress sx={{ mt: 2 }} />}
-      {error && <Typography color="error" sx={{ mt: 1 }}>{error}</Typography>}
-      {reports.length === 0 ? (
-        <Typography color="text.secondary">No reports found.</Typography>
-      ) : (
-        <List>
-          {reports.map((report) => (
-            <ListItem key={report.id}>
-              <ListItemText
-                primary={`Report ${report.id}`}
-                secondary={`Created: ${report.createdAt?.toDate().toLocaleString() || "N/A"}`}
-              />
-              <Button
-                variant="contained"
-                onClick={() => handleExport(report.id)}
-                disabled={loading}
-              >
-                Download
-              </Button>
-            </ListItem>
-          ))}
-        </List>
-      )}
+      <Box sx={{ mb: 4 }}>
+        <TextField
+          label="Start Date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={{ mr: 2, mb: 2 }}
+          disabled={loading}
+        />
+        <TextField
+          label="End Date"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={{ mr: 2, mb: 2 }}
+          disabled={loading}
+        />
+        <Button
+          variant="contained"
+          onClick={handleExportPDF}
+          disabled={loading || !startDate || !endDate}
+        >
+          {loading ? <CircularProgress size={24} /> : "Export to PDF"}
+        </Button>
+      </Box>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

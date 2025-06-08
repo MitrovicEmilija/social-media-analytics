@@ -1,9 +1,5 @@
 /* eslint-disable max-len */
 const {onRequest} = require("firebase-functions/v2/https");
-const {onMessagePublished} = require("firebase-functions/v2/pubsub");
-const {onDocumentCreated, onDocumentUpdated} = require("firebase-functions/v2/firestore");
-const {onObjectFinalized} = require("firebase-functions/v2/storage");
-const {onSchedule} = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
@@ -15,21 +11,8 @@ exports.updateProfile = onRequest(require("./src/auth/updateProfile"));
 exports.deleteAccount = onRequest(require("./src/auth/deleteAccount"));
 
 // Data Collection
-exports.fetchSocialData = onRequest(require("./src/data/fetch"));
-exports.processSocialData = onMessagePublished({topic: "social-data"}, require("./src/data/process"));
-exports.syncExternalData = onRequest(require("./src/data/sync"));
-
-// Insights
-exports.analyzeSentiment = onDocumentCreated({document: "posts/{postId}"}, require("./src/insights/sentiment"));
-exports.getInsights = onRequest(require("./src/insights/insights"));
-exports.updateTrends = onDocumentUpdated({document: "posts/{postId}"}, require("./src/insights/trends"));
-
-// Alerts
-exports.sendAlert = onMessagePublished({topic: "alerts"}, require("./src/alerts/send"));
-exports.logNotification = onDocumentCreated({document: "notifications/{notificationId}"}, require("./src/alerts/log"));
-exports.queueAlert = onRequest({region: "europe-west1"}, require("./src/alerts/queue"));
-
-// Reports
-exports.generateReport = onSchedule({schedule: "every 24 hours"}, require("./src/reports/generate"));
-exports.processReportFile = onObjectFinalized(require("./src/reports/process"));
-exports.exportReport = onRequest(require("./src/reports/export"));
+exports.addTransaction = onRequest(require("./src/data/add"));
+exports.updateTransaction = onRequest(require("./src/data/update"));
+exports.deleteTransaction = onRequest(require("./src/data/delete"));
+exports.listTransactions = onRequest(require("./src/data/list"));
+exports.exportTransactionsToPDF = onRequest(require("./src/reports/export"));
