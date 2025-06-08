@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { auth } from "../firebase/firebaseConfig";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { TextField, Button, Box, Typography } from "@mui/material";
 
 const Auth = ({ setUser }) => {
@@ -13,21 +13,13 @@ const Auth = ({ setUser }) => {
     e.preventDefault();
     setError("");
     try {
-      if (isSignUp) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        setUser(userCredential.user);
-      } else {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        setUser(userCredential.user);
-      }
+      const userCredential = isSignUp
+        ? await createUserWithEmailAndPassword(auth, email, password)
+        : await signInWithEmailAndPassword(auth, email, password);
+      setUser(userCredential.user);
     } catch (err) {
       setError(err.message);
     }
-  };
-
-  const handleSignOut = async () => {
-    await signOut(auth);
-    setUser(null);
   };
 
   return (
@@ -56,11 +48,6 @@ const Auth = ({ setUser }) => {
         <Button onClick={() => setIsSignUp(!isSignUp)} sx={{ mt: 1 }}>
           {isSignUp ? "Switch to Sign In" : "Switch to Sign Up"}
         </Button>
-        {auth.currentUser && (
-          <Button onClick={handleSignOut} variant="outlined" fullWidth sx={{ mt: 1 }}>
-            Sign Out
-          </Button>
-        )}
         {error && <Typography color="error" sx={{ mt: 1 }}>{error}</Typography>}
       </form>
     </Box>

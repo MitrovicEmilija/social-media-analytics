@@ -18,8 +18,7 @@ module.exports = async (event) => {
       postId,
       content,
       platform,
-      timestamp: admin.firestore.Timestamp.fromDate(new Date(timestamp)),
-      processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp,
     });
 
     logger.info(`Post ${postId} processed successfully`, {structuredData: true});

@@ -1,21 +1,29 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { auth, db } from "../firebase/firebaseConfig";
-import { collection, onSnapshot } from "firebase/firestore";
-import { functionsUrl } from "../firebase/firebaseConfig";
-import { TextField, Button, Box, Typography, List, ListItem, ListItemText } from "@mui/material";
+import { db, functionsUrl } from "../firebase/firebaseConfig";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { TextField, Button, Box, Typography, Card, CardContent } from "@mui/material";
 
 const FetchData = ({ user }) => {
   const [platform, setPlatform] = useState("reddit");
-  const [query, setQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = onSnapshot(collection(db, "posts"), (snapshot) => {
-      const fetchedPosts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const q = query(
+      collection(db, "users", user.uid, "posts"),
+      where("userId", "==", user.uid)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedPosts = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       setPosts(fetchedPosts);
+    }, (err) => {
+      setError(err.message);
     });
     return () => unsubscribe();
   }, [user]);
@@ -23,22 +31,30 @@ const FetchData = ({ user }) => {
   const handleFetch = async (e) => {
     e.preventDefault();
     setError("");
+    if (!platform.trim() || !searchQuery.trim()) {
+      setError("Platform and query are required.");
+      return;
+    }
     try {
       const idToken = await user.getIdToken();
       await axios.post(
         `${functionsUrl}/fetchSocialData`,
-        { platform, query },
-        { headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" } }
+        { platform, query: searchQuery, userId: user.uid },
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
-      // Posts will update via Firestore listener
     } catch (err) {
       setError(err.response?.data?.error || err.message);
     }
   };
 
   return (
-    <Box sx={{ maxWidth: 600, mx: "auto", mt: 4 }}>
-      <Typography variant="h5">Fetch Social Media Data</Typography>
+    <Box sx={{ mb: 4 }}>
+      <Typography variant="h6">Fetch Posts</Typography>
       <form onSubmit={handleFetch}>
         <TextField
           label="Platform"
@@ -51,36 +67,36 @@ const FetchData = ({ user }) => {
           label="Query"
           fullWidth
           margin="normal"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
         <Button
           type="submit"
           variant="contained"
           fullWidth
           sx={{ mt: 2 }}
-          disabled={!platform.trim() || !query.trim()}
+          disabled={!platform.trim() || !searchQuery.trim()}
         >
           Fetch Data
         </Button>
         {error && <Typography color="error" sx={{ mt: 1 }}>{error}</Typography>}
       </form>
-      <Typography variant="h6" sx={{ mt: 4 }}>Posts</Typography>
+      <Typography variant="h6" sx={{ mt: 3 }}>Posts</Typography>
       {posts.length === 0 ? (
-        <Typography sx={{ mt: 2, color: "text.secondary" }}>
-          No posts found. Try fetching data with a different platform or query.
+        <Typography sx={{ color: "text.secondary" }}>
+          No posts found. Try fetching with a different platform or query.
         </Typography>
       ) : (
-        <List>
-          {posts.map((post) => (
-            <ListItem key={post.id}>
-              <ListItemText
-                primary={post.content}
-                secondary={`Platform: ${post.platform} | Sentiment: ${post.sentiment?.score || "N/A"}`}
-              />
-            </ListItem>
-          ))}
-        </List>
+        posts.map((post) => (
+          <Card key={post.id} sx={{ mb: 1 }}>
+            <CardContent>
+              <Typography>{post.content}</Typography>
+              <Typography color="text.secondary">
+                Platform: {post.platform} | Sentiment: {post.sentiment || "N/A"}
+              </Typography>
+            </CardContent>
+          </Card>
+        ))
       )}
     </Box>
   );
